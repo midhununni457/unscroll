@@ -4,8 +4,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // ─── DOM References ─────────────────────────────────────────────────
   const masterToggle = document.getElementById('master-toggle');
-  const scrollLimitSlider = document.getElementById('scroll-limit');
-  const scrollLimitValue = document.getElementById('scroll-limit-value');
+  const scrollLimitInput = document.getElementById('scroll-limit');
   const strictToggle = document.getElementById('strict-toggle');
   const sessionCount = document.getElementById('session-count');
   const sessionLimit = document.getElementById('session-limit');
@@ -29,8 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function applySettingsToUI() {
     masterToggle.checked = settings.enabled;
-    scrollLimitSlider.value = settings.scrollLimit;
-    scrollLimitValue.textContent = settings.scrollLimit;
+    scrollLimitInput.value = settings.scrollLimit;
     strictToggle.checked = settings.strictMode;
     sessionLimit.textContent = settings.scrollLimit;
 
@@ -93,19 +91,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     applySettingsToUI();
   });
 
-  scrollLimitSlider.addEventListener('input', () => {
-    const value = parseInt(scrollLimitSlider.value, 10);
-    scrollLimitValue.textContent = value;
-    sessionLimit.textContent = value;
-    settings.scrollLimit = value;
-
-    // Live-update the progress bar
-    loadSessionCount();
+  let saveDebounce = null;
+  scrollLimitInput.addEventListener('input', () => {
+    // Live-update the session display as the user types
+    const raw = parseInt(scrollLimitInput.value, 10);
+    if (!isNaN(raw) && raw >= 1) {
+      sessionLimit.textContent = raw;
+    }
   });
 
-  scrollLimitSlider.addEventListener('change', async () => {
-    settings.scrollLimit = parseInt(scrollLimitSlider.value, 10);
+  scrollLimitInput.addEventListener('change', async () => {
+    let value = parseInt(scrollLimitInput.value, 10);
+    if (isNaN(value) || value < 1) value = 1;
+    if (value > 999) value = 999;
+    scrollLimitInput.value = value;
+    settings.scrollLimit = value;
+    sessionLimit.textContent = value;
     await saveSettings();
+    loadSessionCount();
   });
 
   strictToggle.addEventListener('change', async () => {

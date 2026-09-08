@@ -296,45 +296,32 @@ body {
   gap: 10px;
 }
 
-/* ─── Range Input ─────────────────────────────────────────────────── */
-.range-input {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100px;
-  height: 6px;
+/* ─── Number Input ────────────────────────────────────────────────── */
+.number-input {
+  width: 64px;
+  padding: 6px 8px;
   background: #2d3748;
-  border-radius: 3px;
-  outline: none;
-  cursor: pointer;
-}
-
-.range-input::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  background: var(--accent);
-  border-radius: 50%;
-  cursor: pointer;
-  box-shadow: 0 0 8px var(--accent-glow);
-  transition: transform 0.15s ease;
-}
-
-.range-input::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
-}
-
-.range-input::-webkit-slider-thumb:active {
-  transform: scale(1.05);
-}
-
-.range-value {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
   font-size: 16px;
-  font-weight: 700;
-  color: var(--accent);
-  min-width: 28px;
-  text-align: right;
+  font-weight: 600;
+  text-align: center;
   font-variant-numeric: tabular-nums;
+  outline: none;
+  transition: border-color 0.2s ease;
+  -moz-appearance: textfield;
+}
+
+.number-input::-webkit-inner-spin-button,
+.number-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.number-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 /* ─── Footer ──────────────────────────────────────────────────────── */

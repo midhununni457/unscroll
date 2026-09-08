@@ -127,7 +127,7 @@
   // ─── Shorts Lifecycle ───────────────────────────────────────────────
   function onEnterShorts(shortId) {
     currentShortId = shortId;
-    scrollCount = 0;
+    scrollCount = 1; // First short counts as 1
     temporaryBonus = 0;
     attachScrollListeners();
     reportCount();
@@ -227,22 +227,6 @@
   }
 
   // ─── Overlay UI (Shadow DOM) ────────────────────────────────────────
-  const MOTIVATIONAL_MESSAGES = [
-    { emoji: '🌿', text: 'Go touch some grass' },
-    { emoji: '🧠', text: 'Your brain will thank you' },
-    { emoji: '🌍', text: 'The real world misses you' },
-    { emoji: '☀️', text: 'There\'s a whole world outside' },
-    { emoji: '📖', text: 'Maybe read a book instead?' },
-    { emoji: '🏃', text: 'Time to stretch those legs' },
-    { emoji: '💤', text: 'Your eyes need a break' },
-    { emoji: '🎯', text: 'Stay focused on what matters' },
-    { emoji: '⏰', text: 'Time flies when you\'re scrolling' },
-    { emoji: '✨', text: 'You have better things to do' },
-  ];
-
-  function getRandomMessage() {
-    return MOTIVATIONAL_MESSAGES[Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length)];
-  }
 
   function showOverlay() {
     if (overlayInjected) return;
@@ -261,30 +245,21 @@
     host.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2147483647;pointer-events:auto;';
 
     const shadow = host.attachShadow({ mode: 'closed' });
-    const message = getRandomMessage();
 
     shadow.innerHTML = `
       <style>${getOverlayStyles()}</style>
       <div class="ss-overlay" id="ss-overlay">
         <div class="ss-backdrop"></div>
         <div class="ss-card">
-          <div class="ss-icon">${message.emoji}</div>
-          <h1 class="ss-title">Time to take a break!</h1>
-          <p class="ss-subtitle">${message.text}</p>
-          <p class="ss-count">You've watched <strong>${scrollCount}</strong> shorts this session.</p>
+          <p class="ss-count">${scrollCount} shorts watched</p>
+          <h1 class="ss-title">You hit your limit.</h1>
+          <p class="ss-subtitle">You said ${settings.scrollLimit}, and you meant it.</p>
           <div class="ss-actions">
-            <button class="ss-btn ss-btn-primary" id="ss-go-home">
-              <span class="ss-btn-icon">🏠</span>
-              Go to YouTube Home
-            </button>
+            <button class="ss-btn ss-btn-primary" id="ss-go-home">Back to YouTube</button>
             ${!settings.strictMode ? `
-              <button class="ss-btn ss-btn-secondary" id="ss-more">
-                <span class="ss-btn-icon">⏩</span>
-                5 more shorts
-              </button>
+              <button class="ss-btn ss-btn-secondary" id="ss-more">5 more</button>
             ` : ''}
           </div>
-          <p class="ss-footer">Scroll Stopper is keeping you in check ✌️</p>
         </div>
       </div>
     `;
@@ -340,7 +315,7 @@
         align-items: center;
         justify-content: center;
         opacity: 0;
-        transition: opacity 0.4s ease;
+        transition: opacity 0.3s ease;
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       }
 
@@ -351,148 +326,84 @@
       .ss-backdrop {
         position: absolute;
         inset: 0;
-        background: rgba(0, 0, 0, 0.75);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        background: rgba(0, 0, 0, 0.85);
       }
 
       .ss-card {
         position: relative;
-        background: linear-gradient(145deg, #1a1a2e, #16213e);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 24px;
-        padding: 48px 40px;
-        max-width: 440px;
+        background: #212121;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 36px 32px;
+        max-width: 380px;
         width: 90%;
         text-align: center;
-        box-shadow:
-          0 32px 64px rgba(0, 0, 0, 0.5),
-          0 0 0 1px rgba(255, 255, 255, 0.05),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        transform: translateY(30px) scale(0.95);
-        animation: ss-card-enter 0.5s ease 0.1s forwards;
-      }
-
-      @keyframes ss-card-enter {
-        to {
-          transform: translateY(0) scale(1);
-        }
-      }
-
-      .ss-icon {
-        font-size: 64px;
-        margin-bottom: 16px;
-        animation: ss-pulse 2s ease-in-out infinite;
-      }
-
-      @keyframes ss-pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.1); }
-      }
-
-      .ss-title {
-        font-size: 28px;
-        font-weight: 700;
-        color: #ffffff;
-        margin-bottom: 8px;
-        letter-spacing: -0.5px;
-      }
-
-      .ss-subtitle {
-        font-size: 18px;
-        color: #a0aec0;
-        margin-bottom: 24px;
-        font-weight: 400;
       }
 
       .ss-count {
-        font-size: 14px;
-        color: #718096;
-        margin-bottom: 32px;
-        padding: 12px 20px;
-        background: rgba(255, 255, 255, 0.04);
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        font-size: 13px;
+        color: #999;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
 
-      .ss-count strong {
-        color: #fc8181;
-        font-size: 18px;
-        font-weight: 700;
+      .ss-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 6px;
+      }
+
+      .ss-subtitle {
+        font-size: 14px;
+        color: #888;
+        margin-bottom: 28px;
       }
 
       .ss-actions {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        margin-bottom: 24px;
+        gap: 10px;
       }
 
       .ss-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        padding: 16px 24px;
-        border-radius: 14px;
-        font-size: 16px;
-        font-weight: 600;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
         cursor: pointer;
         border: none;
-        transition: all 0.2s ease;
-        letter-spacing: 0.2px;
-      }
-
-      .ss-btn:active {
-        transform: scale(0.97);
-      }
-
-      .ss-btn-icon {
-        font-size: 18px;
+        transition: background 0.15s ease;
       }
 
       .ss-btn-primary {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: #ffffff;
-        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+        background: #fff;
+        color: #111;
       }
 
       .ss-btn-primary:hover {
-        background: linear-gradient(135deg, #5a72d4, #6a4291);
-        box-shadow: 0 6px 24px rgba(102, 126, 234, 0.5);
-        transform: translateY(-1px);
+        background: #e0e0e0;
       }
 
       .ss-btn-secondary {
-        background: rgba(255, 255, 255, 0.06);
-        color: #a0aec0;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: transparent;
+        color: #777;
+        border: 1px solid #444;
       }
 
       .ss-btn-secondary:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #e2e8f0;
-        transform: translateY(-1px);
-      }
-
-      .ss-footer {
-        font-size: 12px;
-        color: #4a5568;
-        font-style: italic;
+        background: #2a2a2a;
+        color: #aaa;
       }
 
       @media (max-width: 480px) {
         .ss-card {
-          padding: 32px 24px;
-          border-radius: 20px;
+          padding: 28px 20px;
         }
 
         .ss-title {
-          font-size: 24px;
-        }
-
-        .ss-icon {
-          font-size: 48px;
+          font-size: 20px;
         }
       }
     `;
