@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Unscroll",
   "version": "1.0.0",
-  "description": "Stop doomscrolling YouTube Shorts. Set limits and unscroll your feed.",
+  "description": "Stop doomscrolling YouTube Shorts. Get a gentle nudge after watching too many.",
   "permissions": ["storage"],
   "icons": {
     "16": "icons/icon16.png",
