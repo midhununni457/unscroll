@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scroll Stopper</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="popup-header">
+      <div class="popup-logo">
+        <span class="popup-logo-icon">🛑</span>
+        <div>
+          <h1 class="popup-title">Scroll Stopper</h1>
+          <p class="popup-tagline">Tame your Shorts habit</p>
+        </div>
+      </div>
+      <div class="toggle-wrapper" id="master-toggle-wrapper">
+        <label class="toggle" for="master-toggle">
+          <input type="checkbox" id="master-toggle" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </header>
+
+    <!-- Session Status -->
+    <section class="session-card" id="session-card">
+      <div class="session-info">
+        <span class="session-label">This session</span>
+        <div class="session-count-row">
+          <span class="session-count" id="session-count">0</span>
+          <span class="session-separator">/</span>
+          <span class="session-limit" id="session-limit">20</span>
+          <span class="session-unit">shorts</span>
+        </div>
+      </div>
+      <div class="session-bar-container">
+        <div class="session-bar" id="session-bar" style="width: 0%"></div>
+      </div>
+      <button class="reset-btn" id="reset-btn" title="Reset counter">
+        ↺ Reset
+      </button>
+    </section>
+
+    <!-- Settings -->
+    <section class="settings-section">
+      <h2 class="section-title">Settings</h2>
+
+      <!-- Scroll Limit -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span class="setting-name">Scroll Limit</span>
+          <span class="setting-desc">Shorts before warning</span>
+        </div>
+        <div class="setting-control">
+          <input type="range" id="scroll-limit" min="1" max="100" value="20" class="range-input">
+          <span class="range-value" id="scroll-limit-value">20</span>
+        </div>
+      </div>
+
+      <!-- Strict Mode -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span class="setting-name">Strict Mode</span>
+          <span class="setting-desc">No dismiss option</span>
+        </div>
+        <div class="setting-control">
+          <label class="toggle" for="strict-toggle">
+            <input type="checkbox" id="strict-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="popup-footer">
+      <span>Scroll Stopper v1.0</span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
