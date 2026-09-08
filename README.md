@@ -10,15 +10,11 @@
 
 ## ✨ Features
 
-- **Smart Detection** — Detects when you're watching YouTube Shorts and counts each short you scroll through
-- **Configurable Limit** — Set your own scroll limit (1–999, default: 20) via a direct number input
-- **Blocking Overlay** — Clean, minimal full-screen overlay that blocks further scrolling when you hit your limit
-- **Gentle Mode** — Dismissable overlay with a "5 more" extension button (dynamically adjusts your effective session limit)
-- **Strict Mode** — No extension option — redirects you back to YouTube Home
-- **Session Tracking** — Live counter in the popup showing your current session progress
-- **Color-Coded Badge** — Extension icon badge turns green → orange → red as you approach your limit
-- **Per-Tab Tracking** — Each tab tracks its own session independently
-- **Real-Time Settings** — Changes take effect immediately, no reload needed
+- **Smart Detection** — Automatically tracks and counts shorts as you scroll without slowing down playback
+- **Configurable Limits** — Set your custom limit (1–999) directly in the popup
+- **Minimal Stop Modal** — Blocks scrolling when you reach your limit, with a "Back to YouTube" button and optional "5 more" snooze
+- **Live Progress & Badge** — Color-coded extension icon badge (green → orange → red) and real-time session counter
+- **Strict Mode** — Optional lock-in mode that removes the snooze option entirely
 
 ---
 
@@ -93,16 +89,6 @@ Each unique `/shorts/VIDEO_ID` transition increments the counter.
 | `storage` | Save user settings (sync across devices) and session counters |
 
 **No other permissions are needed.** The extension uses declarative content script injection matched to `youtube.com` — no `tabs`, `activeTab`, or host permissions required.
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/my-feature`)
-3. Commit your changes (`git commit -m 'feat: add my feature'`)
-4. Push to the branch (`git push origin feature/my-feature`)
-5. Open a Pull Request
 
 ---
 
