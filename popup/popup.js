@@ -44,16 +44,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     await chrome.storage.sync.set({ settings });
   }
 
+  async function getActiveTab() {
+    try {
+      const [lastFocused] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      if (lastFocused) return lastFocused;
+    } catch (e) {}
+    try {
+      const [current] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (current) return current;
+    } catch (e) {}
+    return null;
+  }
+
   // ─── Load Session Count ─────────────────────────────────────────────
   async function loadSessionCount() {
     try {
-      // Get the active tab to query its count
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) return;
+      const tab = await getActiveTab();
 
+      // Priority 1: Query content script directly if active on YouTube
+      if (tab?.id) {
+        try {
+          const liveData = await chrome.tabs.sendMessage(tab.id, { type: 'GET_CONTENT_COUNT' });
+          if (liveData && typeof liveData.count === 'number') {
+            currentBonus = liveData.bonus ?? 0;
+            updateSessionDisplay(liveData.count, currentBonus);
+            return;
+          }
+        } catch (e) {
+          // Content script may not be loaded on this tab
+        }
+      }
+
+      // Priority 2: Query service worker session store
       const response = await chrome.runtime.sendMessage({
         type: 'GET_TAB_COUNT',
-        tabId: tab.id,
+        tabId: tab?.id,
       });
 
       const count = response?.count ?? 0;
@@ -121,13 +146,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   resetBtn.addEventListener('click', async () => {
     try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) return;
+      const tab = await getActiveTab();
 
       await chrome.runtime.sendMessage({
         type: 'RESET_COUNT',
-        tabId: tab.id,
+        tabId: tab?.id,
       });
+
+      if (tab?.id) {
+        chrome.tabs.sendMessage(tab.id, { type: 'RESET_COUNT' }).catch(() => {});
+      }
 
       currentBonus = 0;
       updateSessionDisplay(0, 0);

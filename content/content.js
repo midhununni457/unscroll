@@ -5,6 +5,9 @@
 (function () {
   'use strict';
 
+  // Only run in top window, avoid iframes
+  if (window !== window.top) return;
+
   // ─── State ───────────────────────────────────────────────────────────
   let currentShortId = null;
   let scrollCount = 0;
@@ -54,23 +57,34 @@
   }
 
   // ─── URL / Navigation Detection ─────────────────────────────────────
-  function extractShortId(url) {
-    const match = url.match(/\/shorts\/([a-zA-Z0-9_-]+)/);
+  function extractShortId(pathname) {
+    const match = pathname.match(/\/shorts\/([a-zA-Z0-9_-]+)/);
     return match ? match[1] : null;
   }
 
   function checkIfOnShorts() {
-    const shortId = extractShortId(window.location.pathname);
+    const pathname = window.location.pathname;
+    const isShortsRoute = pathname.startsWith('/shorts');
+    const shortId = extractShortId(pathname);
     const wasOnShorts = isOnShorts;
-    isOnShorts = shortId !== null;
 
-    if (isOnShorts && !wasOnShorts) {
+    if (!isShortsRoute) {
+      if (wasOnShorts) {
+        onLeaveShorts();
+      }
+      return;
+    }
+
+    // We ARE on Shorts route (/shorts, /shorts/, or /shorts/<id>)
+    isOnShorts = true;
+
+    if (!wasOnShorts) {
       // Just entered Shorts
       onEnterShorts(shortId);
-    } else if (!isOnShorts && wasOnShorts) {
-      // Just left Shorts
-      onLeaveShorts();
-    } else if (isOnShorts && shortId !== currentShortId) {
+    } else if (shortId && currentShortId === null) {
+      // Initial short resolved its ID
+      currentShortId = shortId;
+    } else if (shortId && shortId !== currentShortId) {
       // Navigated to a different short
       onNewShort(shortId);
     }
@@ -82,7 +96,6 @@
 
   function onYtNavigateStart() {
     // Early detection — YouTube fires this before navigation completes
-    // We use it alongside yt-navigate-finish for speed
   }
 
   function onPopState() {
@@ -92,21 +105,17 @@
 
   function onVisibilityChange() {
     // When user switches back to this tab, re-check state
-    if (document.visibilityState === 'visible' && isOnShorts) {
-      // Re-verify we're still on shorts (URL may have changed)
+    if (document.visibilityState === 'visible') {
       checkIfOnShorts();
     }
   }
 
   function interceptHistoryMethods() {
-    // YouTube uses pushState/replaceState for SPA navigation.
-    // We monkey-patch these to detect URL changes immediately.
     const originalPushState = history.pushState;
     const originalReplaceState = history.replaceState;
 
     history.pushState = function (...args) {
       originalPushState.apply(this, args);
-      // Defer check to next microtask so the URL has updated
       Promise.resolve().then(() => checkIfOnShorts());
     };
 
@@ -117,14 +126,14 @@
   }
 
   function startUrlPolling() {
-    let lastUrl = window.location.href;
+    let lastPath = window.location.pathname;
     urlCheckInterval = setInterval(() => {
-      const currentUrl = window.location.href;
-      if (currentUrl !== lastUrl) {
-        lastUrl = currentUrl;
+      const currentPath = window.location.pathname;
+      if (currentPath !== lastPath) {
+        lastPath = currentPath;
         checkIfOnShorts();
       }
-    }, 500);
+    }, 150);
   }
 
   // ─── Shorts Lifecycle ───────────────────────────────────────────────
@@ -182,8 +191,11 @@
   // listen for scroll/touch/key events to catch cases where the URL
   // hasn't updated yet (e.g., rapid swiping).
 
-  let scrollDebounceTimer = null;
-  let lastScrollTime = 0;
+  let deferredCheckTimer = null;
+  function triggerDeferredCheck() {
+    clearTimeout(deferredCheckTimer);
+    deferredCheckTimer = setTimeout(checkIfOnShorts, 100);
+  }
 
   function onWheelEvent(e) {
     if (!settings.enabled || !isOnShorts) return;
@@ -192,7 +204,10 @@
     if (scrollCount >= effectiveLimit && overlayInjected) {
       e.preventDefault();
       e.stopPropagation();
+      return;
     }
+
+    triggerDeferredCheck();
   }
 
   function onTouchMoveEvent(e) {
@@ -202,7 +217,10 @@
     if (scrollCount >= effectiveLimit && overlayInjected) {
       e.preventDefault();
       e.stopPropagation();
+      return;
     }
+
+    triggerDeferredCheck();
   }
 
   function onKeyDownEvent(e) {
@@ -215,7 +233,10 @@
     if (scrollCount >= effectiveLimit && overlayInjected) {
       e.preventDefault();
       e.stopPropagation();
+      return;
     }
+
+    triggerDeferredCheck();
   }
 
   function attachScrollListeners() {
@@ -451,12 +472,17 @@
   }
 
   // ─── Runtime Message Listener ──────────────────────────────────────
-  function onRuntimeMessage(message) {
+  function onRuntimeMessage(message, sender, sendResponse) {
     if (message.type === 'RESET_COUNT') {
       scrollCount = isOnShorts ? 1 : 0;
       temporaryBonus = 0;
       removeOverlay();
+      reportCount();
+      sendResponse({ success: true });
+    } else if (message.type === 'GET_CONTENT_COUNT') {
+      sendResponse({ count: scrollCount, bonus: temporaryBonus, isOnShorts });
     }
+    return true;
   }
 
   // ─── Cleanup ────────────────────────────────────────────────────────

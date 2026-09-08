@@ -29,49 +29,83 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         case 'SCROLL_COUNT_UPDATE': {
           const tabId = sender.tab?.id;
-          if (tabId == null) break;
+          if (tabId == null) {
+            sendResponse({ error: 'No tab id' });
+            break;
+          }
 
+          const count = message.count ?? 0;
           const bonus = message.bonus ?? 0;
           const countKey = `tab_${tabId}_count`;
           const bonusKey = `tab_${tabId}_bonus`;
           await chrome.storage.session.set({
-            [countKey]: message.count,
+            [countKey]: count,
             [bonusKey]: bonus,
           });
 
           // Update badge with current count
           const { settings = DEFAULT_SETTINGS } = await chrome.storage.sync.get('settings');
           const effectiveLimit = settings.scrollLimit + bonus;
+          const badgeText = count > 0 ? String(count) : '';
 
-          await chrome.action.setBadgeText({
-            text: String(message.count),
-            tabId,
-          });
+          await chrome.action.setBadgeText({ text: badgeText, tabId });
+          await chrome.action.setBadgeTextColor({ color: '#FFFFFF', tabId });
 
           // Color the badge based on proximity to the effective limit
-          const ratio = message.count / effectiveLimit;
+          const ratio = count / effectiveLimit;
           let color;
           if (ratio < 0.5) color = '#4CAF50';       // Green — plenty left
           else if (ratio < 0.8) color = '#FF9800';   // Orange — getting close
           else color = '#F44336';                     // Red — at or near limit
 
           await chrome.action.setBadgeBackgroundColor({ color, tabId });
+
+          // Also keep default badge in sync if this tab is active
+          try {
+            const [activeTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+            if (activeTab && activeTab.id === tabId) {
+              await chrome.action.setBadgeText({ text: badgeText });
+              await chrome.action.setBadgeTextColor({ color: '#FFFFFF' });
+              await chrome.action.setBadgeBackgroundColor({ color });
+            }
+          } catch (e) { /* ignore */ }
+
           sendResponse({ success: true });
           break;
         }
 
         case 'LIMIT_REACHED': {
           const tabId = sender.tab?.id;
-          if (tabId == null) break;
+          if (tabId == null) {
+            sendResponse({ error: 'No tab id' });
+            break;
+          }
 
           await chrome.action.setBadgeText({ text: '!', tabId });
+          await chrome.action.setBadgeTextColor({ color: '#FFFFFF', tabId });
           await chrome.action.setBadgeBackgroundColor({ color: '#F44336', tabId });
+
+          try {
+            const [activeTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+            if (activeTab && activeTab.id === tabId) {
+              await chrome.action.setBadgeText({ text: '!' });
+              await chrome.action.setBadgeTextColor({ color: '#FFFFFF' });
+              await chrome.action.setBadgeBackgroundColor({ color: '#F44336' });
+            }
+          } catch (e) { /* ignore */ }
+
           sendResponse({ success: true });
           break;
         }
 
         case 'GET_TAB_COUNT': {
-          const tabId = sender.tab?.id ?? message.tabId;
+          let tabId = sender.tab?.id ?? message.tabId;
+          if (tabId == null) {
+            try {
+              const [activeTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+              tabId = activeTab?.id;
+            } catch (e) {}
+          }
           if (tabId == null) { sendResponse({ count: 0, bonus: 0 }); break; }
 
           const countKey = `tab_${tabId}_count`;
@@ -93,6 +127,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           await chrome.storage.session.set({ [countKey]: 0, [bonusKey]: 0 });
           await chrome.action.setBadgeText({ text: '', tabId });
 
+          try {
+            await chrome.action.setBadgeText({ text: '' });
+          } catch (e) {}
+
           // Forward reset to content script if active on this tab
           try {
             chrome.tabs.sendMessage(tabId, { type: 'RESET_COUNT' }).catch(() => {});
@@ -105,12 +143,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case 'LEFT_SHORTS': {
           // User navigated away from Shorts — clear badge and reset count/bonus
           const tabId = sender.tab?.id;
-          if (tabId == null) break;
+          if (tabId == null) {
+            sendResponse({ success: true });
+            break;
+          }
 
           const countKey = `tab_${tabId}_count`;
           const bonusKey = `tab_${tabId}_bonus`;
           await chrome.storage.session.set({ [countKey]: 0, [bonusKey]: 0 });
           await chrome.action.setBadgeText({ text: '', tabId });
+
+          try {
+            const [activeTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+            if (activeTab && activeTab.id === tabId) {
+              await chrome.action.setBadgeText({ text: '' });
+            }
+          } catch (e) {}
+
           sendResponse({ success: true });
           break;
         }
@@ -128,28 +177,38 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // ─── Tab cleanup — remove session data when a tab is closed ──────────
 chrome.tabs.onRemoved.addListener(async (tabId) => {
-  const key = `tab_${tabId}_count`;
-  await chrome.storage.session.remove(key);
+  const countKey = `tab_${tabId}_count`;
+  const bonusKey = `tab_${tabId}_bonus`;
+  await chrome.storage.session.remove([countKey, bonusKey]);
 });
 
 // ─── Restore badge when user switches tabs ───────────────────────────
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   const tabId = activeInfo.tabId;
-  const key = `tab_${tabId}_count`;
-  const data = await chrome.storage.session.get(key);
-  const count = data[key];
+  const countKey = `tab_${tabId}_count`;
+  const bonusKey = `tab_${tabId}_bonus`;
+  const data = await chrome.storage.session.get([countKey, bonusKey]);
+  const count = data[countKey];
+  const bonus = data[bonusKey] ?? 0;
 
   if (count != null && count > 0) {
-    // This tab has an active Shorts session — restore badge
     const { settings = DEFAULT_SETTINGS } = await chrome.storage.sync.get('settings');
-    const ratio = count / settings.scrollLimit;
+    const effectiveLimit = settings.scrollLimit + bonus;
+    const ratio = count / effectiveLimit;
     let color;
     if (ratio < 0.5) color = '#4CAF50';
     else if (ratio < 0.8) color = '#FF9800';
     else color = '#F44336';
 
-    await chrome.action.setBadgeText({ text: String(count), tabId });
+    const text = String(count);
+    await chrome.action.setBadgeText({ text, tabId });
+    await chrome.action.setBadgeText({ text });
+    await chrome.action.setBadgeTextColor({ color: '#FFFFFF', tabId });
+    await chrome.action.setBadgeTextColor({ color: '#FFFFFF' });
     await chrome.action.setBadgeBackgroundColor({ color, tabId });
+    await chrome.action.setBadgeBackgroundColor({ color });
+  } else {
+    await chrome.action.setBadgeText({ text: '', tabId });
+    await chrome.action.setBadgeText({ text: '' });
   }
-  // If no count, badge stays as-is (Chrome handles per-tab badges automatically)
 });
