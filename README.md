@@ -11,13 +11,12 @@
 ## ✨ Features
 
 - **Smart Detection** — Detects when you're watching YouTube Shorts and counts each short you scroll through
-- **Configurable Limit** — Set your own scroll limit (1–100, default: 20)
-- **Blocking Overlay** — Beautiful full-screen overlay that blocks further scrolling when you hit your limit
-- **Gentle Mode** — Dismissable overlay with a "5 more shorts" snooze button
-- **Strict Mode** — No dismiss option — you _must_ go back to YouTube Home
+- **Configurable Limit** — Set your own scroll limit (1–999, default: 20) via a direct number input
+- **Blocking Overlay** — Clean, minimal full-screen overlay that blocks further scrolling when you hit your limit
+- **Gentle Mode** — Dismissable overlay with a "5 more" extension button (dynamically adjusts your effective session limit)
+- **Strict Mode** — No extension option — redirects you back to YouTube Home
 - **Session Tracking** — Live counter in the popup showing your current session progress
 - **Color-Coded Badge** — Extension icon badge turns green → orange → red as you approach your limit
-- **Motivational Messages** — Random rotating messages to nudge you away from the screen
 - **Per-Tab Tracking** — Each tab tracks its own session independently
 - **Real-Time Settings** — Changes take effect immediately, no reload needed
 
@@ -27,7 +26,7 @@
 
 1. Download or clone this repository:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/scroll-stopper.git
+   git clone https://github.com/midhununni457/scroll-stopper.git
    ```
 
 2. Open Chrome and navigate to `chrome://extensions`
@@ -44,16 +43,16 @@
 
 1. **Browse YouTube Shorts as usual** — the extension works silently in the background
 2. **Watch the badge counter** — it shows how many shorts you've watched this session
-3. **Hit your limit** — a blocking overlay appears with a motivational message
-4. **Go Home** — click "Go to YouTube Home" to leave Shorts
-5. **Or snooze** — in Gentle mode, click "5 more shorts" to continue (but the overlay will return!)
+3. **Hit your limit** — a minimal blocking overlay appears reminding you of your limit
+4. **Go Home** — click "Back to YouTube" to leave Shorts
+5. **Or snooze** — in Gentle mode, click "5 more" to extend your current session by 5 shorts
 
 ### Popup Controls
 
 - **Master Toggle** — Enable/disable the extension entirely
-- **Scroll Limit Slider** — Set how many shorts before the warning (1–100)
+- **Scroll Limit Input** — Type your preferred scroll limit (1–999)
 - **Strict Mode** — Toggle between Gentle (dismissable) and Strict (forced redirect)
-- **Session Counter** — See your current count with a color-coded progress bar
+- **Session Counter** — See your current count with a color-coded progress bar and effective limit
 - **Reset Button** — Manually reset your counter for the current tab
 
 ---
@@ -71,6 +70,7 @@ scroll-stopper/
 │   ├── popup.html         # Popup UI structure
 │   ├── popup.js           # Popup logic & settings management
 │   └── popup.css          # Dark-themed popup styles
+├── LICENSE                # MIT License
 └── README.md
 ```
 

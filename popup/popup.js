@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   let settings = DEFAULT_SETTINGS;
+  let currentBonus = 0;
 
   async function loadSettings() {
     const data = await chrome.storage.sync.get('settings');
@@ -30,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     masterToggle.checked = settings.enabled;
     scrollLimitInput.value = settings.scrollLimit;
     strictToggle.checked = settings.strictMode;
-    sessionLimit.textContent = settings.scrollLimit;
+    sessionLimit.textContent = settings.scrollLimit + currentBonus;
 
     if (!settings.enabled) {
       document.body.classList.add('disabled');
@@ -56,18 +57,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       const count = response?.count ?? 0;
-      updateSessionDisplay(count);
+      currentBonus = response?.bonus ?? 0;
+      updateSessionDisplay(count, currentBonus);
     } catch (err) {
       console.warn('[Scroll Stopper] Failed to load session count:', err);
-      updateSessionDisplay(0);
+      updateSessionDisplay(0, 0);
     }
   }
 
-  function updateSessionDisplay(count) {
+  function updateSessionDisplay(count, bonus = currentBonus) {
+    currentBonus = bonus;
+    const effectiveLimit = settings.scrollLimit + currentBonus;
     sessionCount.textContent = count;
-    sessionLimit.textContent = settings.scrollLimit;
+    sessionLimit.textContent = effectiveLimit;
 
-    const ratio = count / settings.scrollLimit;
+    const ratio = count / effectiveLimit;
     const percentage = Math.min(ratio * 100, 100);
 
     // Update progress bar
@@ -91,12 +95,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     applySettingsToUI();
   });
 
-  let saveDebounce = null;
   scrollLimitInput.addEventListener('input', () => {
     // Live-update the session display as the user types
     const raw = parseInt(scrollLimitInput.value, 10);
     if (!isNaN(raw) && raw >= 1) {
-      sessionLimit.textContent = raw;
+      sessionLimit.textContent = raw + currentBonus;
     }
   });
 
@@ -106,7 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (value > 999) value = 999;
     scrollLimitInput.value = value;
     settings.scrollLimit = value;
-    sessionLimit.textContent = value;
+    sessionLimit.textContent = value + currentBonus;
     await saveSettings();
     loadSessionCount();
   });
@@ -126,7 +129,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         tabId: tab.id,
       });
 
-      updateSessionDisplay(0);
+      currentBonus = 0;
+      updateSessionDisplay(0, 0);
     } catch (err) {
       console.warn('[Scroll Stopper] Failed to reset count:', err);
     }

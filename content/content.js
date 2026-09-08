@@ -37,6 +37,9 @@
 
     // Listen for settings changes in real-time
     chrome.storage.onChanged.addListener(onStorageChanged);
+
+    // Listen for messages from background/popup (e.g. RESET_COUNT)
+    chrome.runtime.onMessage.addListener(onRuntimeMessage);
   }
 
   async function loadSettings() {
@@ -166,6 +169,7 @@
       await chrome.runtime.sendMessage({
         type: 'SCROLL_COUNT_UPDATE',
         count: scrollCount,
+        bonus: temporaryBonus,
       });
     } catch (err) {
       // Extension context may be invalidated on update/reload
@@ -246,6 +250,8 @@
 
     const shadow = host.attachShadow({ mode: 'closed' });
 
+    const effectiveLimit = settings.scrollLimit + temporaryBonus;
+
     shadow.innerHTML = `
       <style>${getOverlayStyles()}</style>
       <div class="ss-overlay" id="ss-overlay">
@@ -253,7 +259,7 @@
         <div class="ss-card">
           <p class="ss-count">${scrollCount} shorts watched</p>
           <h1 class="ss-title">You hit your limit.</h1>
-          <p class="ss-subtitle">You said ${settings.scrollLimit}, and you meant it.</p>
+          <p class="ss-subtitle">You said ${effectiveLimit}, and you meant it.</p>
           <div class="ss-actions">
             <button class="ss-btn ss-btn-primary" id="ss-go-home">Back to YouTube</button>
             ${!settings.strictMode ? `
@@ -277,6 +283,7 @@
       const moreBtn = shadow.getElementById('ss-more');
       moreBtn.addEventListener('click', () => {
         temporaryBonus += 5;
+        reportCount();
         removeOverlay();
       });
     }
@@ -443,6 +450,15 @@
     }
   }
 
+  // ─── Runtime Message Listener ──────────────────────────────────────
+  function onRuntimeMessage(message) {
+    if (message.type === 'RESET_COUNT') {
+      scrollCount = isOnShorts ? 1 : 0;
+      temporaryBonus = 0;
+      removeOverlay();
+    }
+  }
+
   // ─── Cleanup ────────────────────────────────────────────────────────
   function cleanup() {
     if (urlCheckInterval) clearInterval(urlCheckInterval);
@@ -453,6 +469,7 @@
     detachScrollListeners();
     removeOverlay();
     chrome.storage.onChanged.removeListener(onStorageChanged);
+    chrome.runtime.onMessage.removeListener(onRuntimeMessage);
   }
 
   // ─── Start ──────────────────────────────────────────────────────────

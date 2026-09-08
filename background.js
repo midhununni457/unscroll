@@ -31,21 +31,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           const tabId = sender.tab?.id;
           if (tabId == null) break;
 
-          // Store per-tab scroll count in session storage
-          const key = `tab_${tabId}_count`;
-          await chrome.storage.session.set({ [key]: message.count });
+          const bonus = message.bonus ?? 0;
+          const countKey = `tab_${tabId}_count`;
+          const bonusKey = `tab_${tabId}_bonus`;
+          await chrome.storage.session.set({
+            [countKey]: message.count,
+            [bonusKey]: bonus,
+          });
 
           // Update badge with current count
           const { settings = DEFAULT_SETTINGS } = await chrome.storage.sync.get('settings');
-          const remaining = settings.scrollLimit - message.count;
+          const effectiveLimit = settings.scrollLimit + bonus;
 
           await chrome.action.setBadgeText({
             text: String(message.count),
             tabId,
           });
 
-          // Color the badge based on proximity to the limit
-          const ratio = message.count / settings.scrollLimit;
+          // Color the badge based on proximity to the effective limit
+          const ratio = message.count / effectiveLimit;
           let color;
           if (ratio < 0.5) color = '#4CAF50';       // Green — plenty left
           else if (ratio < 0.8) color = '#FF9800';   // Orange — getting close
@@ -68,11 +72,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         case 'GET_TAB_COUNT': {
           const tabId = sender.tab?.id ?? message.tabId;
-          if (tabId == null) { sendResponse({ count: 0 }); break; }
+          if (tabId == null) { sendResponse({ count: 0, bonus: 0 }); break; }
 
-          const key = `tab_${tabId}_count`;
-          const data = await chrome.storage.session.get(key);
-          sendResponse({ count: data[key] ?? 0 });
+          const countKey = `tab_${tabId}_count`;
+          const bonusKey = `tab_${tabId}_bonus`;
+          const data = await chrome.storage.session.get([countKey, bonusKey]);
+          sendResponse({
+            count: data[countKey] ?? 0,
+            bonus: data[bonusKey] ?? 0,
+          });
           break;
         }
 
@@ -80,20 +88,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           const tabId = sender.tab?.id ?? message.tabId;
           if (tabId == null) break;
 
-          const key = `tab_${tabId}_count`;
-          await chrome.storage.session.set({ [key]: 0 });
+          const countKey = `tab_${tabId}_count`;
+          const bonusKey = `tab_${tabId}_bonus`;
+          await chrome.storage.session.set({ [countKey]: 0, [bonusKey]: 0 });
           await chrome.action.setBadgeText({ text: '', tabId });
+
+          // Forward reset to content script if active on this tab
+          try {
+            chrome.tabs.sendMessage(tabId, { type: 'RESET_COUNT' }).catch(() => {});
+          } catch (err) { /* tab may not have content script */ }
+
           sendResponse({ success: true });
           break;
         }
 
         case 'LEFT_SHORTS': {
-          // User navigated away from Shorts — clear badge and reset count
+          // User navigated away from Shorts — clear badge and reset count/bonus
           const tabId = sender.tab?.id;
           if (tabId == null) break;
 
-          const key = `tab_${tabId}_count`;
-          await chrome.storage.session.set({ [key]: 0 });
+          const countKey = `tab_${tabId}_count`;
+          const bonusKey = `tab_${tabId}_bonus`;
+          await chrome.storage.session.set({ [countKey]: 0, [bonusKey]: 0 });
           await chrome.action.setBadgeText({ text: '', tabId });
           sendResponse({ success: true });
           break;
