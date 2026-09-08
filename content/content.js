@@ -23,6 +23,15 @@
     document.addEventListener('yt-navigate-finish', onYtNavigate);
     document.addEventListener('yt-navigate-start', onYtNavigateStart);
 
+    // Handle browser back/forward navigation
+    window.addEventListener('popstate', onPopState);
+
+    // Intercept history.pushState/replaceState (YouTube uses these for SPA nav)
+    interceptHistoryMethods();
+
+    // Handle tab visibility changes (user switching tabs)
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
     // Fallback: poll URL for changes (some YT navigations don't fire events)
     startUrlPolling();
 
@@ -71,6 +80,37 @@
   function onYtNavigateStart() {
     // Early detection — YouTube fires this before navigation completes
     // We use it alongside yt-navigate-finish for speed
+  }
+
+  function onPopState() {
+    // Browser back/forward button pressed
+    checkIfOnShorts();
+  }
+
+  function onVisibilityChange() {
+    // When user switches back to this tab, re-check state
+    if (document.visibilityState === 'visible' && isOnShorts) {
+      // Re-verify we're still on shorts (URL may have changed)
+      checkIfOnShorts();
+    }
+  }
+
+  function interceptHistoryMethods() {
+    // YouTube uses pushState/replaceState for SPA navigation.
+    // We monkey-patch these to detect URL changes immediately.
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    history.pushState = function (...args) {
+      originalPushState.apply(this, args);
+      // Defer check to next microtask so the URL has updated
+      Promise.resolve().then(() => checkIfOnShorts());
+    };
+
+    history.replaceState = function (...args) {
+      originalReplaceState.apply(this, args);
+      Promise.resolve().then(() => checkIfOnShorts());
+    };
   }
 
   function startUrlPolling() {
@@ -208,6 +248,9 @@
     if (overlayInjected) return;
     overlayInjected = true;
 
+    // Block page-level scrolling
+    document.documentElement.classList.add('scroll-stopper-blocked');
+
     // Report limit reached to service worker
     try {
       chrome.runtime.sendMessage({ type: 'LIMIT_REACHED' });
@@ -276,6 +319,7 @@
       host.remove();
     }
     overlayInjected = false;
+    document.documentElement.classList.remove('scroll-stopper-blocked');
   }
 
   function getOverlayStyles() {
@@ -493,6 +537,8 @@
     if (urlCheckInterval) clearInterval(urlCheckInterval);
     document.removeEventListener('yt-navigate-finish', onYtNavigate);
     document.removeEventListener('yt-navigate-start', onYtNavigateStart);
+    window.removeEventListener('popstate', onPopState);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
     detachScrollListeners();
     removeOverlay();
     chrome.storage.onChanged.removeListener(onStorageChanged);

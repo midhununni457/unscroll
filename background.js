@@ -116,9 +116,24 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
   await chrome.storage.session.remove(key);
 });
 
-// ─── Clear badge when user switches away from a Shorts tab ───────────
+// ─── Restore badge when user switches tabs ───────────────────────────
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
-  // We don't clear the badge here — the content script will handle
-  // updating state when the tab becomes visible. The badge persists
-  // per-tab automatically via Chrome's tabId-scoped badge API.
+  const tabId = activeInfo.tabId;
+  const key = `tab_${tabId}_count`;
+  const data = await chrome.storage.session.get(key);
+  const count = data[key];
+
+  if (count != null && count > 0) {
+    // This tab has an active Shorts session — restore badge
+    const { settings = DEFAULT_SETTINGS } = await chrome.storage.sync.get('settings');
+    const ratio = count / settings.scrollLimit;
+    let color;
+    if (ratio < 0.5) color = '#4CAF50';
+    else if (ratio < 0.8) color = '#FF9800';
+    else color = '#F44336';
+
+    await chrome.action.setBadgeText({ text: String(count), tabId });
+    await chrome.action.setBadgeBackgroundColor({ color, tabId });
+  }
+  // If no count, badge stays as-is (Chrome handles per-tab badges automatically)
 });
