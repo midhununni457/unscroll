@@ -168,16 +168,18 @@
     reportCount();
 
     const effectiveLimit = settings.scrollLimit + temporaryBonus;
-    if (scrollCount >= effectiveLimit) {
+    if (scrollCount > effectiveLimit) {
       showOverlay();
     }
   }
 
   async function reportCount() {
     try {
+      const effectiveLimit = settings.scrollLimit + temporaryBonus;
+      const reportedCount = Math.min(scrollCount, effectiveLimit);
       await chrome.runtime.sendMessage({
         type: 'SCROLL_COUNT_UPDATE',
-        count: scrollCount,
+        count: reportedCount,
         bonus: temporaryBonus,
       });
     } catch (err) {
@@ -313,7 +315,7 @@
       <div class="ss-overlay" id="ss-overlay">
         <div class="ss-backdrop"></div>
         <div class="ss-card">
-          <p class="ss-count">${scrollCount} shorts watched</p>
+          <p class="ss-count">${effectiveLimit} shorts watched</p>
           <h1 class="ss-title">You hit your limit.</h1>
           <p class="ss-subtitle">You said ${effectiveLimit}, and you meant it.</p>
           <div class="ss-actions">
@@ -490,7 +492,7 @@
           // Extension was just enabled while on Shorts
           attachScrollListeners();
           const effectiveLimit = settings.scrollLimit + temporaryBonus;
-          if (scrollCount >= effectiveLimit) {
+          if (scrollCount > effectiveLimit) {
             showOverlay();
           }
         }
@@ -498,9 +500,9 @@
         // Check if current count exceeds new limit
         if (settings.enabled && isOnShorts) {
           const effectiveLimit = settings.scrollLimit + temporaryBonus;
-          if (scrollCount >= effectiveLimit && !overlayInjected) {
+          if (scrollCount > effectiveLimit && !overlayInjected) {
             showOverlay();
-          } else if (scrollCount < effectiveLimit && overlayInjected) {
+          } else if (scrollCount <= effectiveLimit && overlayInjected) {
             removeOverlay();
           }
         }
@@ -517,7 +519,8 @@
       reportCount();
       sendResponse({ success: true });
     } else if (message.type === 'GET_CONTENT_COUNT') {
-      sendResponse({ count: scrollCount, bonus: temporaryBonus, isOnShorts });
+      const effectiveLimit = settings.scrollLimit + temporaryBonus;
+      sendResponse({ count: Math.min(scrollCount, effectiveLimit), bonus: temporaryBonus, isOnShorts });
     }
     return true;
   }
