@@ -251,11 +251,46 @@
     document.removeEventListener('keydown', onKeyDownEvent, { capture: true });
   }
 
+  // ─── Video Control ──────────────────────────────────────────────────
+  function pauseVideos() {
+    try {
+      const videos = document.querySelectorAll('video');
+      videos.forEach((video) => {
+        try {
+          if (!video.paused) {
+            video.pause();
+          }
+        } catch (e) {}
+      });
+    } catch (err) {}
+  }
+
+  function resumeActiveVideo() {
+    try {
+      const activeVideo = document.querySelector('ytd-reel-video-renderer[is-active] video') || document.querySelector('video');
+      if (activeVideo && activeVideo.paused) {
+        activeVideo.play().catch(() => {});
+      }
+    } catch (err) {}
+  }
+
+  function onVideoPlay(e) {
+    if (overlayInjected && e.target && typeof e.target.pause === 'function') {
+      try {
+        e.target.pause();
+      } catch (err) {}
+    }
+  }
+
   // ─── Overlay UI (Shadow DOM) ────────────────────────────────────────
 
   function showOverlay() {
     if (overlayInjected) return;
     overlayInjected = true;
+
+    // Pause all playing videos
+    pauseVideos();
+    document.addEventListener('play', onVideoPlay, true);
 
     // Block page-level scrolling
     document.documentElement.classList.add('scroll-stopper-blocked');
@@ -306,6 +341,7 @@
         temporaryBonus += 5;
         reportCount();
         removeOverlay();
+        resumeActiveVideo();
       });
     }
 
@@ -317,6 +353,7 @@
   }
 
   function removeOverlay() {
+    document.removeEventListener('play', onVideoPlay, true);
     const host = document.getElementById('scroll-stopper-overlay-host');
     if (host) {
       host.remove();
