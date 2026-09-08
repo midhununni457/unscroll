@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Scroll Stopper",
+  "version": "1.0.0",
+  "description": "Stop doomscrolling YouTube Shorts. Get a gentle nudge after watching too many.",
+  "permissions": ["storage"],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Scroll Stopper"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://www.youtube.com/*"],
+      "js": ["content/content.js"],
+      "css": ["content/content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
