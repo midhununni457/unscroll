@@ -1,10 +1,10 @@
-/* Scroll Stopper — Content Script Styles
+/* Unscroll — Content Script Styles
    Minimal CSS injected into the YouTube page.
    The overlay itself uses Shadow DOM for complete isolation,
    so these styles are only for page-level adjustments if needed. */
 
 /* When the overlay is active, prevent body scroll */
-html.scroll-stopper-blocked,
-html.scroll-stopper-blocked body {
+html.unscroll-blocked,
+html.unscroll-blocked body {
   overflow: hidden !important;
 }

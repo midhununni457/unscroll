@@ -1,4 +1,4 @@
-// Scroll Stopper — Service Worker (background.js)
+// Unscroll — Service Worker (background.js)
 // Manages persistent settings in chrome.storage.sync and
 // ephemeral session state in chrome.storage.session.
 // All state is read on-demand — no global variables.
@@ -168,7 +168,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ error: 'Unknown message type' });
       }
     } catch (err) {
-      console.error('[Scroll Stopper] Service worker error:', err);
+      console.error('[Unscroll] Service worker error:', err);
       sendResponse({ error: err.message });
     }
   })();

@@ -1,4 +1,4 @@
-// Scroll Stopper — Popup Script (popup.js)
+// Unscroll — Popup Script (popup.js)
 // Manages the settings UI and syncs with chrome.storage.
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentBonus = response?.bonus ?? 0;
       updateSessionDisplay(count, currentBonus);
     } catch (err) {
-      console.warn('[Scroll Stopper] Failed to load session count:', err);
+      console.warn('[Unscroll] Failed to load session count:', err);
       updateSessionDisplay(0, 0);
     }
   }
@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentBonus = 0;
       updateSessionDisplay(0, 0);
     } catch (err) {
-      console.warn('[Scroll Stopper] Failed to reset count:', err);
+      console.warn('[Unscroll] Failed to reset count:', err);
     }
   });
 

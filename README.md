@@ -1,4 +1,4 @@
-# 🛑 Scroll Stopper
+# 🛑 Unscroll
 
 **Stop doomscrolling YouTube Shorts.** Get a gentle (or firm) nudge after watching too many.
 
@@ -22,14 +22,14 @@
 
 1. Download or clone this repository:
    ```bash
-   git clone https://github.com/midhununni457/scroll-stopper.git
+   git clone https://github.com/midhununni457/unscroll.git
    ```
 
 2. Open Chrome and navigate to `chrome://extensions`
 
 3. Enable **Developer mode** (toggle in the top-right corner)
 
-4. Click **Load unpacked** and select the `scroll-stopper` folder
+4. Click **Load unpacked** and select the `unscroll` folder
 
 5. The 🛑 icon will appear in your extensions toolbar. Pin it for easy access!
 
@@ -56,7 +56,7 @@
 ## 🏗️ Architecture
 
 ```
-scroll-stopper/
+unscroll/
 ├── manifest.json          # Extension manifest (MV3)
 ├── background.js          # Service worker — state management & messaging
 ├── icons/                 # Extension icons (16px, 48px, 128px)
@@ -73,7 +73,7 @@ scroll-stopper/
 
 ### How Detection Works
 
-YouTube Shorts is a single-page app (SPA), so traditional page load detection doesn't work. Scroll Stopper uses a **triple detection** strategy:
+YouTube Shorts is a single-page app (SPA), so traditional page load detection doesn't work. Unscroll uses a **triple detection** strategy:
 
 1. **YouTube SPA Events** — Listens for `yt-navigate-finish` custom events
 2. **History API Interception** — Intercepts navigation changes immediately

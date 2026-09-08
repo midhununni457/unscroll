@@ -1,4 +1,4 @@
-// Scroll Stopper — Content Script (content.js)
+// Unscroll — Content Script (content.js)
 // Detects YouTube Shorts navigation, counts shorts viewed,
 // and injects a blocking overlay when the limit is reached.
 
@@ -52,7 +52,7 @@
         settings = response.settings;
       }
     } catch (err) {
-      console.warn('[Scroll Stopper] Failed to load settings:', err);
+      console.warn('[Unscroll] Failed to load settings:', err);
     }
   }
 
@@ -295,7 +295,7 @@
     document.addEventListener('play', onVideoPlay, true);
 
     // Block page-level scrolling
-    document.documentElement.classList.add('scroll-stopper-blocked');
+    document.documentElement.classList.add('unscroll-blocked');
 
     // Report limit reached to service worker
     try {
@@ -303,7 +303,7 @@
     } catch (err) { /* ignore */ }
 
     const host = document.createElement('div');
-    host.id = 'scroll-stopper-overlay-host';
+    host.id = 'unscroll-overlay-host';
     host.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2147483647;pointer-events:auto;';
 
     const shadow = host.attachShadow({ mode: 'closed' });
@@ -356,12 +356,12 @@
 
   function removeOverlay() {
     document.removeEventListener('play', onVideoPlay, true);
-    const host = document.getElementById('scroll-stopper-overlay-host');
+    const host = document.getElementById('unscroll-overlay-host');
     if (host) {
       host.remove();
     }
     overlayInjected = false;
-    document.documentElement.classList.remove('scroll-stopper-blocked');
+    document.documentElement.classList.remove('unscroll-blocked');
   }
 
   function getOverlayStyles() {
