@@ -59,6 +59,7 @@
 scroll-stopper/
 ├── manifest.json          # Extension manifest (MV3)
 ├── background.js          # Service worker — state management & messaging
+├── icons/                 # Extension icons (16px, 48px, 128px)
 ├── content/
 │   ├── content.js         # Content script — scroll detection & overlay
 │   └── content.css        # Minimal page-level styles
@@ -75,8 +76,8 @@ scroll-stopper/
 YouTube Shorts is a single-page app (SPA), so traditional page load detection doesn't work. Scroll Stopper uses a **triple detection** strategy:
 
 1. **YouTube SPA Events** — Listens for `yt-navigate-finish` custom events
-2. **History API Interception** — Monkey-patches `pushState`/`replaceState` to catch URL changes immediately
-3. **URL Polling** — 500ms fallback poll as a safety net
+2. **History API Interception** — Intercepts navigation changes immediately
+3. **URL Polling** — 150ms fast fallback poll and deferred scroll checks
 
 Each unique `/shorts/VIDEO_ID` transition increments the counter.
 

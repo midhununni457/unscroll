@@ -65,8 +65,11 @@ body {
 }
 
 .popup-logo-icon {
-  font-size: 32px;
-  filter: drop-shadow(0 0 8px rgba(252, 129, 129, 0.4));
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: block;
+  object-fit: contain;
 }
 
 .popup-title {
